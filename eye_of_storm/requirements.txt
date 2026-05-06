@@ -1,0 +1,23 @@
+# Eye of the Storm — Python dependencies
+# Install: pip install -r requirements.txt
+
+# Core Network & Speed
+aiohttp
+asyncio
+requests
+
+# CLI Interface (The "Wow" Factor)
+rich
+python-dotenv
+argparse
+
+# Data Processing
+beautifulsoup4
+lxml
+phonenumbers
+
+# Metadata & DNS
+Pillow
+exifread
+dnspython
+python-whois
