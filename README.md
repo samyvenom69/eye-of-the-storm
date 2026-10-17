@@ -1,60 +1,57 @@
-<h1 align="center">👁️ EYE OF THE STORM (EOTS)</h1>
-<h3 align="center"><em>Automated External Attack Surface Management (EASM) & OSINT Reconnaissance Engine</em></h3>
+# 👁️ EYE OF THE STORM (EOTS)
+**Automated External Attack Surface Management (EASM) & OSINT Reconnaissance Engine**
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white"/>
-  <img src="https://img.shields.io/badge/AsyncIO-Powered-009688?style=for-the-badge&logo=fastapi&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Platform-Linux%20%7C%20Docker-FCC624?style=for-the-badge&logo=linux&logoColor=black"/>
-  <img src="https://img.shields.io/badge/Compliance-ISO27001%20%7C%20NIS2%20%7C%20DORA-8A2BE2?style=for-the-badge"/>
-  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge"/>
-</p>
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+[![Compliance: ISO27001 | NIS2 | DORA](https://img.shields.io/badge/Compliance-ISO27001%20%7C%20NIS2%20%7C%20DORA-8A2BE2?style=for-the-badge)]()
 
-<p align="center">
-  <strong>Discover shadow assets, correlate threat intelligence, and audit digital footprints before threat actors do.</strong><br/>
-  Built for IT Risk Analysts, Security Auditors, Penetration Testers, and Threat Intelligence Teams.
-</p>
-
----
-
-## 📋 Table of Contents
-
-- [Why Eye of the Storm?](#-why-eye-of-the-storm)
-- [Compliance Mapping](#️-governance--compliance-mapping)
-- [Installation](#-installation)
-- [Usage](#-cli-usage--workflows)
-- [Modules Overview](#-modules-overview)
-- [API Configuration](#-api-configuration-optional)
+Discover shadow assets, correlate threat intelligence, and audit digital footprints before threat actors do. Built for IT Risk Analysts, Security Auditors, Penetration Testers, and Threat Intelligence Teams.
 
 ---
 
 ## ⚡ Why Eye of the Storm?
-
-Modern organizations suffer from **Shadow IT** and sprawling external attack surfaces. Traditional reconnaissance requires chaining dozens of disjointed scripts and manual API queries. 
-
-**Eye of the Storm (EOTS)** unifies **16 specialized reconnaissance and intelligence modules** into a single, asynchronous Python engine:
-* **⚡ High-Concurrency Engine:** Powered by `asyncio` and `aiohttp` for rapid non-blocking network and API harvesting.
-* **🧠 AI/NLP Entity Extraction:** Automatically parses scraped web content using `spaCy` to identify organizations, personnel, and leaked contact vectors.
-* **🛡️ Graceful Degradation:** Operates out-of-the-box using passive sources, while seamlessly scaling up when optional CTI API keys (Shodan, VirusTotal, AbuseIPDB, HIBP) are provided.
-* **📊 Executive-Ready Deliverables:** Generates structured **JSON** for SIEM/SOAR ingestion and clean **HTML reports** for risk committees and audit evidence.
+Modern organizations suffer from Shadow IT and sprawling external attack surfaces. EOTS unifies 16 specialized reconnaissance modules into a single asynchronous Python engine:
+- **High-Concurrency Engine:** Powered by `asyncio` and `aiohttp` for rapid non-blocking harvesting.
+- **AI/NLP Entity Extraction:** Automatically parses scraped web content using `spaCy` to identify organizations, personnel, and leaked contact vectors.
+- **Graceful Degradation:** Operates out-of-the-box using passive sources, while seamlessly scaling when CTI API keys (Shodan, VirusTotal, AbuseIPDB, HIBP) are provided.
+- **Executive Deliverables:** Generates structured JSON for SIEM ingestion and clean HTML reports for risk committees.
 
 ---
 
 ## 🛡️ Governance & Compliance Mapping
-
-| Framework / Standard | Control / Article | How EOTS Assists Auditors & Security Teams |
-| :--- | :--- | :--- |
-| **ISO/IEC 27001:2022** | **Control A.5.7** *(Threat Intelligence)* | Automates the collection and correlation of tactical threat intelligence. |
-| **ISO/IEC 27001:2022** | **Control A.8.9 & A.5.9** *(Asset Inventory)* | Identifies undocumented internet-facing assets and forgotten subdomains. |
-| **DORA (EU Regulation)** | **Art. 8** *(Identification)* & **Art. 28** *(Third-Party)* | Enables rapid external footprint assessment of critical ICT third-party providers. |
-| **NIS 2 Directive** | **Art. 21** *(Supply Chain Security)* | Verifies external DNS hygiene, mail security records, and public credential leaks. |
+- **ISO/IEC 27001:2022 (Control A.5.7 - Threat Intelligence):** Automates collection and correlation of tactical threat intelligence.
+- **ISO/IEC 27001:2022 (Control A.8.9 & A.5.9 - Asset Inventory):** Identifies undocumented internet-facing assets and forgotten subdomains.
+- **DORA Regulation (Art. 8 & 28):** Enables rapid external footprint assessment of critical ICT third-party providers.
+- **NIS 2 Directive (Art. 21 - Supply Chain Security):** Verifies external DNS hygiene, mail security records, and public credential leaks.
 
 ---
 
 ## 📦 Installation
+1. Clone the repository: `git clone [https://github.com/samyvenom69/eye-of-the-storm.git](https://github.com/samyvenom69/eye-of-the-storm.git)`
+2. Enter directory: `cd eye-of-the-storm`
+3. Run the automated installer: `./install.sh` (or set up manually using a Python virtual environment and `pip install -r requirements.txt`).
 
-### Quick Automated Setup (Linux / Kali / Ubuntu)
-```bash
-git clone [https://github.com/samyvenom69/eye-of-the-storm.git](https://github.com/samyvenom69/eye-of-the-storm.git)
-cd eye-of-the-storm
-chmod +x install.sh eots.sh
-./install.sh
+---
+
+## 🚀 Usage & Quick Start
+- Run interactive menu: `python3 main.py`
+- Full automated reconnaissance pipeline: `./eots.sh --target example.com --all --report`
+- Run a specific module: `./eots.sh --module email --target user@example.com`
+
+---
+
+## 🧩 Modules Overview
+- **RECON (Phase 1):** WHOIS, DNS records, Subdomain enumeration, IP Geolocation/ASN, Nmap port scanning, and file metadata extraction (`PDF`, `DOCX`, `XLSX`).
+- **INVESTIGATE (Phase 2):** Username search across 150+ platforms, email breach checks (HIBP), phone carrier intelligence, EXIF GPS coordinates, and Google Dorking.
+- **ANALYSE (Phase 3):** Web scraping with `spaCy` NLP entity extraction, Wayback Machine historical snapshots, and reverse image intelligence.
+- **INTELLIGENCE (Phase 4):** IOC reputation cross-checking via VirusTotal & AbuseIPDB, public data mining, and automated HTML/JSON report generation.
+
+---
+
+## 🔑 API Configuration (Optional)
+Copy `.env.example` to `.env` and configure your optional API keys for Shodan, VirusTotal, AbuseIPDB, HIBP, and Ipinfo.
+
+---
+
+## 👤 Author
+**Samir K.** (`samyvenom69`) — IT Risk & Cybersecurity Specialist | CNAM Paris
