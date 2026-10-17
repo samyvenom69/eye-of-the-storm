@@ -9,6 +9,10 @@
 
 </div>
 
+<p align="center">
+  <img src="assets/banner.svg" width="100%" alt="Eye of the Storm Banner">
+</p>
+
 ---
 
 Discover shadow assets, correlate threat intelligence, and audit digital footprints before threat actors do. Built for IT Risk Analysts, Security Auditors, Penetration Testers, and Threat Intelligence Teams.
