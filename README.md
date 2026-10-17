@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="assets/banner.svg" alt="Eye of the Storm" width="100%"/>
-</p>
-
 <h1 align="center">👁️ EYE OF THE STORM (EOTS)</h1>
 <h3 align="center"><em>Automated External Attack Surface Management (EASM) & OSINT Reconnaissance Engine</em></h3>
 
