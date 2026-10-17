@@ -1,6 +1,15 @@
 # 👁️ EYE OF THE STORM (EOTS)
 **Automated External Attack Surface Management (EASM) & OSINT Reconnaissance Engine**
 
+<div align="center">
+
+# 👁️ EYE OF THE STORM (EOTS)
+### *Automated External Attack Surface Management & OSINT Reconnaissance Framework*
+
+</div>
+
+---
+
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 [![Compliance: ISO27001 | NIS2 | DORA](https://img.shields.io/badge/Compliance-ISO27001%20%7C%20NIS2%20%7C%20DORA-8A2BE2?style=for-the-badge)]()
