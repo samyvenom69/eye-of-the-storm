@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/banner.svg" width="100%" alt="Eye of the Storm Banner">
+
 # 👁️ EYE OF THE STORM (EOTS)
 ### *Automated External Attack Surface Management & OSINT Reconnaissance Framework*
 
