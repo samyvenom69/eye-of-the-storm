@@ -1,18 +1,16 @@
-# 👁️ EYE OF THE STORM (EOTS)
-**Automated External Attack Surface Management (EASM) & OSINT Reconnaissance Engine**
-
-
----
-
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
-[![Compliance: ISO27001 | NIS2 | DORA](https://img.shields.io/badge/Compliance-ISO27001%20%7C%20NIS2%20%7C%20DORA-8A2BE2?style=for-the-badge)]()
 <div align="center">
 
 # 👁️ EYE OF THE STORM (EOTS)
 ### *Automated External Attack Surface Management & OSINT Reconnaissance Framework*
 
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+[![Compliance: ISO27001 | NIS2 | DORA](https://img.shields.io/badge/Compliance-ISO27001%20%7C%20NIS2%20%7C%20DORA-8A2BE2?style=for-the-badge)]()
+
 </div>
+
+---
+
 Discover shadow assets, correlate threat intelligence, and audit digital footprints before threat actors do. Built for IT Risk Analysts, Security Auditors, Penetration Testers, and Threat Intelligence Teams.
 
 ---
@@ -35,7 +33,7 @@ Modern organizations suffer from Shadow IT and sprawling external attack surface
 ---
 
 ## 📦 Installation
-1. Clone the repository: `git clone [https://github.com/samyvenom69/eye-of-the-storm.git](https://github.com/samyvenom69/eye-of-the-storm.git)`
+1. Clone the repository: `git clone https://github.com/samyvenom69/eye-of-the-storm.git`
 2. Enter directory: `cd eye-of-the-storm`
 3. Run the automated installer: `./install.sh` (or set up manually using a Python virtual environment and `pip install -r requirements.txt`).
 
