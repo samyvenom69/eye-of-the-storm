@@ -1,16 +1,16 @@
 """
 Username Reconnaissance Module
 Phase: INVESTIGATE
-Inspired by Sherlock — searches public platforms concurrently.
+Inspired by Sherlock — searches public platforms concurrently (async engine).
 """
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import asyncio
 
+import aiohttp
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 
 from modules import BaseModule
 from utils.banner import console, print_result
-from utils.http import make_session
 
 PLATFORMS = {
     "GitHub":     "https://github.com/{}",
@@ -50,29 +50,20 @@ PLATFORMS = {
     "Wikipedia":  "https://en.wikipedia.org/wiki/User:{}",
 }
 
+RETRY_STATUS = {429, 500, 502, 503, 504}
+
 
 class UsernameReconModule(BaseModule):
-    """Search for a username across public platforms concurrently."""
+    """Search for a username across public platforms concurrently (asyncio + aiohttp)."""
 
-    WORKERS = 20
+    CONCURRENCY = 25
+    MAX_RETRIES = 2
 
     def run(self) -> dict:
         username = self.target.lstrip("@")
         results = {"username": username, "found": [], "not_found": [], "errors": []}
 
-        self.info(f"[USERNAME] Checking: {username} across {len(PLATFORMS)} platforms")
-
-        session = make_session(self.config, pool_size=self.WORKERS)
-
-        def check(platform, url_template):
-            url = url_template.format(username)
-            try:
-                resp = session.get(url, timeout=self.config.REQUEST_TIMEOUT)
-                if resp.status_code == 200:
-                    return ("found", platform, url)
-                return ("not_found", platform, url)
-            except Exception as e:
-                return ("error", platform, str(e))
+        self.info(f"[USERNAME] Checking: {username} across {len(PLATFORMS)} platforms (async engine)")
 
         with Progress(
             SpinnerColumn(),
@@ -86,18 +77,56 @@ class UsernameReconModule(BaseModule):
                 f"[blue]Scanning {len(PLATFORMS)} platforms…[/blue]",
                 total=len(PLATFORMS),
             )
-            with ThreadPoolExecutor(max_workers=self.WORKERS) as ex:
-                futures = {ex.submit(check, p, u): p for p, u in PLATFORMS.items()}
-                for future in as_completed(futures):
-                    status, platform, info = future.result()
-                    if status == "found":
-                        results["found"].append({"platform": platform, "url": info})
-                        print_result(f"  ✓ {platform}", info, color="green")
-                    elif status == "error":
-                        results["errors"].append({"platform": platform, "error": info})
-                    else:
-                        results["not_found"].append(platform)
-                    progress.advance(task)
+
+            def on_result(status, platform, info):
+                if status == "found":
+                    results["found"].append({"platform": platform, "url": info})
+                    print_result(f"  ✓ {platform}", info, color="green")
+                elif status == "error":
+                    results["errors"].append({"platform": platform, "error": info})
+                else:
+                    results["not_found"].append(platform)
+                progress.advance(task)
+
+            asyncio.run(self._scan(username, on_result))
 
         self.info(f"Found on {len(results['found'])} platforms.")
         return results
+
+    # ------------------------------------------------------------------ #
+
+    async def _scan(self, username: str, on_result):
+        timeout = aiohttp.ClientTimeout(total=self.config.REQUEST_TIMEOUT)
+        connector = aiohttp.TCPConnector(limit=self.CONCURRENCY)
+        semaphore = asyncio.Semaphore(self.CONCURRENCY)
+
+        async with aiohttp.ClientSession(
+            timeout=timeout,
+            connector=connector,
+            headers=self.config.REQUEST_HEADERS,
+        ) as session:
+            checks = [
+                self._check(session, semaphore, platform, tpl.format(username))
+                for platform, tpl in PLATFORMS.items()
+            ]
+            for coro in asyncio.as_completed(checks):
+                status, platform, info = await coro
+                on_result(status, platform, info)
+
+    async def _check(self, session, semaphore, name, url):
+        async with semaphore:
+            for attempt in range(self.MAX_RETRIES + 1):
+                try:
+                    async with session.get(url, allow_redirects=True) as resp:
+                        if resp.status in RETRY_STATUS and attempt < self.MAX_RETRIES:
+                            await asyncio.sleep(0.5 * (attempt + 1))
+                            continue
+                        if resp.status == 200:
+                            return ("found", name, url)
+                        return ("not_found", name, url)
+                except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                    if attempt < self.MAX_RETRIES:
+                        await asyncio.sleep(0.5 * (attempt + 1))
+                        continue
+                    return ("error", name, str(e))
+        return ("error", name, "unreachable")
