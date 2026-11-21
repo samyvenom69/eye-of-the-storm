@@ -95,7 +95,7 @@ def _run_one(mod_name: str, target: str, config: Config, verbose: bool):
 
 
 def execute_pipeline(target: str, selected_modules: list, config: Config,
-                     verbose: bool = False, report_fmt: str = None, jobs: int = 4):
+                     verbose: bool = False, report_fmt: str | None = None, jobs: int = 4):
     """Run selected modules (in parallel by default) and optionally generate a report."""
     start_time = time.time()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
