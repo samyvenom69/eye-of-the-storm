@@ -2,23 +2,24 @@
 # Install: pip install -r requirements.txt
 
 # Core Network & Speed
-aiohttp
-asyncio
-requests
+aiohttp>=3.9
+requests>=2.31
 
 # CLI Interface (The "Wow" Factor)
-rich
-python-dotenv
-argparse
+rich>=13.0
+python-dotenv>=1.0
 
 # Data Processing
-beautifulsoup4
-lxml
-phonenumbers
+beautifulsoup4>=4.12
+lxml>=4.9
+phonenumbers>=8.13
 
 # Metadata & DNS
-Pillow
-exifread
-dnspython
-python-whois
-spacy
+Pillow>=10.0
+exifread>=3.0
+dnspython>=2.4
+python-whois>=0.9
+python-nmap>=0.7
+
+# NLP (requires: python -m spacy download en_core_web_sm)
+spacy>=3.7
