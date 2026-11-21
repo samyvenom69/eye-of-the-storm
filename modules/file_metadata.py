@@ -1,5 +1,6 @@
 """File Metadata Extraction Module — Phase: RECON"""
-import os, subprocess
+import os
+import subprocess
 from modules import BaseModule
 from utils.banner import print_result
 
@@ -8,7 +9,8 @@ class FileMetadataModule(BaseModule):
     def run(self) -> dict:
         results = {"file": self.target, "metadata": {}}
         if not os.path.isfile(self.target):
-            results["error"] = "File not found"; return results
+            results["error"] = "File not found"
+            return results
         self.info(f"[METADATA] Analysing: {self.target}")
         try:
             out = subprocess.check_output(["exiftool", "-json", self.target],

@@ -25,5 +25,6 @@ class PhoneIntelModule(BaseModule):
                 if k not in ("number", "valid"):
                     print_result(k.replace("_", " ").title(), str(v), color="cyan")
         except Exception as e:
-            results["error"] = str(e); self.error(str(e))
+            results["error"] = str(e)
+            self.error(str(e))
         return results

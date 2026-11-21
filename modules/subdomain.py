@@ -1,7 +1,6 @@
 """Subdomain Enumeration Module — Phase: RECON"""
 
 import dns.resolver
-import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from modules import BaseModule
