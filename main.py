@@ -5,11 +5,20 @@ Connects all 16 OSINT/EASM modules across the 4 intelligence phases.
 """
 
 import argparse
+import importlib
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
+
 from rich.table import Table
 from rich.prompt import Prompt
+from rich.progress import (
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeElapsedColumn,
+)
 
 from utils.config import Config
 from utils.banner import (
@@ -19,48 +28,33 @@ from utils.banner import (
     print_section,
 )
 
-# Import all 16 EOTS Modules
-from modules.whois_dns import WhoisDNSModule
-from modules.subdomain import SubdomainModule
-from modules.ip_geo import IPGeoModule
-from modules.port_scan import PortScanModule
-from modules.file_metadata import FileMetadataModule
-from modules.username_recon import UsernameReconModule
-from modules.email_breach import EmailBreachModule
-from modules.phone_intel import PhoneIntelModule
-from modules.exif_gps import ExifGPSModule
-from modules.google_dork import GoogleDorkModule
-from modules.web_scraper import WebScraperModule
-from modules.wayback import WaybackModule
-from modules.reverse_image import ReverseImageModule
-from modules.geoint import GeointModule
-from modules.threat_intel import ThreatIntelModule
-from modules.social_intel import SocialIntelModule
-from modules.report import ReportModule
+__version__ = "2.0.0"
 
-# Registry mapping CLI flags to Module Classes and metadata
+# Registry mapping CLI flags to (module path, class name, phase, description).
+# Module classes are imported lazily so startup stays fast (e.g. spaCy is only
+# loaded when the scrape module is actually executed).
 MODULE_REGISTRY = {
     # Phase 1 — RECON
-    "whois":     (WhoisDNSModule,      "1-RECON",        "WHOIS lookup & DNS records (A, MX, NS, TXT, CNAME)"),
-    "subdomain": (SubdomainModule,     "1-RECON",        "Subdomain enumeration (crt.sh + wordlist)"),
-    "ip":        (IPGeoModule,         "1-RECON",        "IP geolocation, ASN, abuse score, reverse DNS"),
-    "portscan":  (PortScanModule,      "1-RECON",        "TCP/UDP port scanning via Nmap integration"),
-    "metadata":  (FileMetadataModule,  "1-RECON",        "Extract metadata from PDF, DOCX, XLSX, images"),
+    "whois":     ("modules.whois_dns",      "WhoisDNSModule",      "1-RECON",        "WHOIS lookup & DNS records (A, MX, NS, TXT, CNAME)"),
+    "subdomain": ("modules.subdomain",      "SubdomainModule",     "1-RECON",        "Subdomain enumeration (crt.sh + wordlist)"),
+    "ip":        ("modules.ip_geo",         "IPGeoModule",         "1-RECON",        "IP geolocation, ASN, abuse score, reverse DNS"),
+    "portscan":  ("modules.port_scan",      "PortScanModule",      "1-RECON",        "TCP/UDP port scanning via Nmap integration"),
+    "metadata":  ("modules.file_metadata",  "FileMetadataModule",  "1-RECON",        "Extract metadata from PDF, DOCX, XLSX, images"),
     # Phase 2 — INVESTIGATE
-    "username":  (UsernameReconModule, "2-INVESTIGATE",  "Username lookup across 150+ platforms"),
-    "email":     (EmailBreachModule,   "2-INVESTIGATE",  "Breach detection, paste leaks, email validation"),
-    "phone":     (PhoneIntelModule,    "2-INVESTIGATE",  "Carrier, region, timezone, number validation"),
-    "exif":      (ExifGPSModule,       "2-INVESTIGATE",  "Extract GPS coordinates & EXIF from images"),
-    "dork":      (GoogleDorkModule,    "2-INVESTIGATE",  "Automated Google Dorking query templates"),
+    "username":  ("modules.username_recon", "UsernameReconModule", "2-INVESTIGATE",  "Username lookup across public platforms"),
+    "email":     ("modules.email_breach",   "EmailBreachModule",   "2-INVESTIGATE",  "Breach detection, paste leaks, email validation"),
+    "phone":     ("modules.phone_intel",    "PhoneIntelModule",    "2-INVESTIGATE",  "Carrier, region, timezone, number validation"),
+    "exif":      ("modules.exif_gps",       "ExifGPSModule",       "2-INVESTIGATE",  "Extract GPS coordinates & EXIF from images"),
+    "dork":      ("modules.google_dork",    "GoogleDorkModule",    "2-INVESTIGATE",  "Automated Google Dorking query templates"),
     # Phase 3 — ANALYSE
-    "scrape":    (WebScraperModule,    "3-ANALYSE",      "Website crawling + spaCy NLP entity extraction"),
-    "wayback":   (WaybackModule,       "3-ANALYSE",      "Wayback Machine historical snapshot analysis"),
-    "revimg":    (ReverseImageModule,  "3-ANALYSE",      "Reverse image search correlation"),
-    "geoint":    (GeointModule,        "3-ANALYSE",      "GEOINT coordinate analysis & satellite links"),
+    "scrape":    ("modules.web_scraper",    "WebScraperModule",    "3-ANALYSE",      "Website crawling + spaCy NLP entity extraction"),
+    "wayback":   ("modules.wayback",        "WaybackModule",       "3-ANALYSE",      "Wayback Machine historical snapshot analysis"),
+    "revimg":    ("modules.reverse_image",  "ReverseImageModule",  "3-ANALYSE",      "Reverse image search correlation"),
+    "geoint":    ("modules.geoint",         "GeointModule",        "3-ANALYSE",      "GEOINT coordinate analysis & satellite links"),
     # Phase 4 — INTELLIGENCE
-    "threat":    (ThreatIntelModule,   "4-INTELLIGENCE", "Threat intelligence feeds (VirusTotal, AbuseIPDB)"),
-    "social":    (SocialIntelModule,   "4-INTELLIGENCE", "Reddit & GitHub public data intelligence"),
-    "report":    (ReportModule,        "4-INTELLIGENCE", "HTML / JSON executive report generation"),
+    "threat":    ("modules.threat_intel",   "ThreatIntelModule",   "4-INTELLIGENCE", "Threat intelligence feeds (VirusTotal, AbuseIPDB)"),
+    "social":    ("modules.social_intel",   "SocialIntelModule",   "4-INTELLIGENCE", "Reddit & GitHub public data intelligence"),
+    "report":    ("modules.report",         "ReportModule",        "4-INTELLIGENCE", "HTML / JSON executive report generation"),
 }
 
 # Predefined pipelines
@@ -72,6 +66,12 @@ FULL_PIPELINE  = [
 ]
 
 
+def load_module_class(mod_name: str):
+    """Lazily import a module class on first use."""
+    mod_path, class_name, _, _ = MODULE_REGISTRY[mod_name]
+    return getattr(importlib.import_module(mod_path), class_name)
+
+
 def list_modules_table():
     """Display all available modules in a formatted Rich table."""
     table = Table(title="🧩 Eye of the Storm — Available Modules")
@@ -79,43 +79,94 @@ def list_modules_table():
     table.add_column("Phase", style="magenta", no_wrap=True)
     table.add_column("Description", style="white")
 
-    for key, (_, phase, desc) in MODULE_REGISTRY.items():
+    for key, (_, _, phase, desc) in MODULE_REGISTRY.items():
         table.add_row(key, phase, desc)
 
     console.print(table)
 
 
-def execute_pipeline(target: str, selected_modules: list, config: Config, verbose: bool = False, report_fmt: str = None):
-    """Run selected modules sequentially and optionally generate a report."""
+def _run_one(mod_name: str, target: str, config: Config, verbose: bool):
+    """Execute a single module and return (name, result, duration)."""
+    started = time.time()
+    mod_class = load_module_class(mod_name)
+    instance = mod_class(target=target, config=config, verbose=verbose)
+    result = instance.run()
+    return mod_name, result, time.time() - started
+
+
+def execute_pipeline(target: str, selected_modules: list, config: Config,
+                     verbose: bool = False, report_fmt: str = None, jobs: int = 4):
+    """Run selected modules (in parallel by default) and optionally generate a report."""
     start_time = time.time()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     all_results = {
         "target": target,
         "timestamp": timestamp,
-        "modules": {}
+        "modules": {},
+        "durations": {},
     }
 
     print_section(f"TARGET: {target}")
 
-    for mod_name in selected_modules:
-        if mod_name == "report":
-            continue
+    runnable = [m for m in selected_modules if m != "report"]
+    for mod_name in runnable:
         if mod_name not in MODULE_REGISTRY:
             console.print(f"  [bold red][!][/bold red] Unknown module '[yellow]{mod_name}[/yellow]'. Skipping.")
-            continue
+    runnable = [m for m in runnable if m in MODULE_REGISTRY]
 
-        mod_class, _, _ = MODULE_REGISTRY[mod_name]
-        print_phase(mod_name)
+    if not runnable:
+        console.print("[bold red]No valid module to run.[/bold red]")
+        return all_results
 
-        try:
-            instance = mod_class(target=target, config=config, verbose=verbose)
-            res = instance.run()
-            all_results["modules"][mod_name] = res
-        except Exception as exc:
-            console.print(f"  [bold red][ERROR][/bold red] Module '{mod_name}' failed: {exc}")
-            all_results["modules"][mod_name] = {"error": str(exc)}
+    if len(runnable) > 1 and jobs > 1:
+        # Parallel engine: independent modules run concurrently.
+        workers = min(jobs, len(runnable))
+        console.print(f"  [dim]⚡ Parallel engine: {workers} workers for {len(runnable)} modules[/dim]")
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            TimeElapsedColumn(),
+            console=console,
+            transient=True,
+        ) as progress:
+            task_ids = {
+                progress.add_task(f"[cyan]{m}[/cyan]", total=None): m
+                for m in runnable
+            }
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                futures = {
+                    executor.submit(_run_one, m, target, config, verbose): m
+                    for m in runnable
+                }
+                for future in as_completed(futures):
+                    mod_name = futures[future]
+                    try:
+                        _, res, dur = future.result()
+                        all_results["modules"][mod_name] = res
+                    except Exception as exc:
+                        console.print(f"  [bold red][ERROR][/bold red] Module '{mod_name}' failed: {exc}")
+                        all_results["modules"][mod_name] = {"error": str(exc)}
+                        dur = 0.0
+                    all_results["durations"][mod_name] = round(dur, 2)
+                    for task_id, name in task_ids.items():
+                        if name == mod_name:
+                            progress.update(task_id, description=f"[green]✓ {name}[/green] ({dur:.1f}s)", completed=100, total=100)
+    else:
+        # Sequential mode with a spinner per module.
+        for mod_name in runnable:
+            print_phase(mod_name)
+            started = time.time()
+            try:
+                _, res, dur = _run_one(mod_name, target, config, verbose)
+                all_results["modules"][mod_name] = res
+            except Exception as exc:
+                console.print(f"  [bold red][ERROR][/bold red] Module '{mod_name}' failed: {exc}")
+                all_results["modules"][mod_name] = {"error": str(exc)}
+                dur = time.time() - started
+            all_results["durations"][mod_name] = round(dur, 2)
 
     elapsed = time.time() - start_time
+    all_results["elapsed"] = round(elapsed, 2)
 
     # Summary Table
     print_section("EXECUTION SUMMARY")
@@ -123,14 +174,16 @@ def execute_pipeline(target: str, selected_modules: list, config: Config, verbos
     summary.add_column("Module", style="cyan")
     summary.add_column("Phase", style="magenta")
     summary.add_column("Status", justify="right")
+    summary.add_column("Duration", justify="right", style="dim")
 
-    for mod_name in selected_modules:
+    for mod_name in runnable:
         if mod_name in all_results["modules"]:
             mod_data = all_results["modules"][mod_name]
-            _, phase, _ = MODULE_REGISTRY[mod_name]
+            _, _, phase, _ = MODULE_REGISTRY[mod_name]
             has_err = isinstance(mod_data, dict) and "error" in mod_data
             status_str = "[bold red]ERROR[/bold red]" if has_err else "[bold green]COMPLETED[/bold green]"
-            summary.add_row(mod_name, phase, status_str)
+            duration = f"{all_results['durations'].get(mod_name, 0):.2f}s"
+            summary.add_row(mod_name, phase, status_str, duration)
 
     console.print(summary)
     console.print(f"  [bold blue]⏱ Total execution time: {elapsed:.2f} seconds[/bold blue]\n")
@@ -138,7 +191,8 @@ def execute_pipeline(target: str, selected_modules: list, config: Config, verbos
     # Report generation if requested
     if report_fmt:
         print_phase("report")
-        reporter = ReportModule(target=target, config=config, verbose=verbose)
+        reporter_cls = load_module_class("report")
+        reporter = reporter_cls(target=target, config=config, verbose=verbose)
         out_path = reporter.generate(all_results, fmt=report_fmt, timestamp=timestamp)
         console.print(f"  [bold green][✓] Report exported to:[/bold green] [underline cyan]{out_path}[/underline cyan]\n")
 
@@ -173,7 +227,7 @@ def build_parser() -> argparse.ArgumentParser:
   ./eots.sh --module whois --target jmmotors.fr
   ./eots.sh --target jmmotors.fr --modules whois,subdomain,ip
   ./eots.sh --target jmmotors.fr --full-recon --output html
-  ./eots.sh --target jmmotors.fr --all --report
+  ./eots.sh --target jmmotors.fr --all --report --jobs 8
 """
     )
     parser.add_argument("-t", "--target", type=str, help="Target (Domain, IP, Email, +Phone, Username, or File path)")
@@ -184,8 +238,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("-r", "--report", action="store_true", help="Generate standalone HTML report in output/ directory")
     parser.add_argument("-o", "--output", type=str, choices=["html", "json"], help="Export results format (html or json)")
     parser.add_argument("-w", "--wordlist", type=str, help="Custom wordlist path for subdomain enumeration")
+    parser.add_argument("-j", "--jobs", type=int, default=4, help="Max parallel workers when running several modules (default: 4, 1 = sequential)")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose debug logging")
     parser.add_argument("--list", action="store_true", help="List all 16 available modules and exit")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     return parser
 
 
@@ -241,6 +297,7 @@ def main():
             config=config,
             verbose=args.verbose,
             report_fmt=report_fmt,
+            jobs=max(1, args.jobs),
         )
     except KeyboardInterrupt:
         console.print("\n[bold red][!] Operation aborted by user. Shutting down gracefully...[/bold red]")
