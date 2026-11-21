@@ -5,6 +5,7 @@ Phase: RECON
 
 import dns.resolver
 import whois
+from typing import ClassVar
 from modules import BaseModule
 from utils.banner import print_result
 
@@ -12,7 +13,7 @@ from utils.banner import print_result
 class WhoisDNSModule(BaseModule):
     """WHOIS lookup + DNS record enumeration (A, MX, NS, TXT, CNAME)."""
 
-    RECORD_TYPES = ["A", "AAAA", "MX", "NS", "TXT", "CNAME", "SOA"]
+    RECORD_TYPES: ClassVar[list[str]] = ["A", "AAAA", "MX", "NS", "TXT", "CNAME", "SOA"]
 
     def run(self) -> dict:
         results = {"target": self.target, "whois": {}, "dns": {}}

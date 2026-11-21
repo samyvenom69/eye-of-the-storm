@@ -1,0 +1,13 @@
+# Ruff configuration — deterministic rule set for local dev and CI.
+[lint]
+select = [
+    "E4",     # imports (no multiple imports on one line)
+    "E7",     # statements (no multiple statements on one line)
+    "E9",     # runtime errors
+    "F",      # pyflakes (unused imports, undefined names…)
+    "RUF012", # mutable class attributes must use ClassVar
+    "RUF013", # no implicit Optional
+]
+# NOTE: BLE001 (blind except) is intentionally NOT enabled: EOTS modules
+# catch broad exceptions by design — a failing recon source must never
+# abort the whole pipeline (graceful degradation).

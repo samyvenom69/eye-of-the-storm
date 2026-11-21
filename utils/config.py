@@ -1,6 +1,7 @@
 """Eye of the Storm — Configuration."""
 
 import os
+from typing import ClassVar
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -14,7 +15,7 @@ class Config:
     VIRUSTOTAL_API_KEY = os.getenv("VIRUSTOTAL_API_KEY", "")
 
     REQUEST_TIMEOUT = 10
-    REQUEST_HEADERS = {
+    REQUEST_HEADERS: ClassVar[dict[str, str]] = {
         "User-Agent": "Mozilla/5.0 (compatible; EOTS-OSINT-Research/1.0)"
     }
     OUTPUT_DIR    = "output"
