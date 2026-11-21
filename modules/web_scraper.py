@@ -15,7 +15,7 @@ class WebScraperModule(BaseModule):
                                 timeout=self.config.REQUEST_TIMEOUT)
             soup = BeautifulSoup(resp.text, "lxml")
             text = soup.get_text(separator=" ", strip=True)
-            results["links"] = list({a["href"] for a in soup.find_all("a", href=True)}[:30])
+            results["links"] = list(dict.fromkeys(a["href"] for a in soup.find_all("a", href=True)))[:30]
             import re
             results["emails"] = re.findall(r"[\w.+-]+@[\w-]+\.[a-z]{2,}", text)
             try:
