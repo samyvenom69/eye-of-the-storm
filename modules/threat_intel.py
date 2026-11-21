@@ -10,7 +10,8 @@ class ThreatIntelModule(BaseModule):
         results = {"target": self.target, "virustotal": {}, "reputation": "unknown"}
         vt_key = self.config.VIRUSTOTAL_API_KEY
         if not vt_key:
-            self.warn("VIRUSTOTAL_API_KEY not set."); return results
+            self.warn("VIRUSTOTAL_API_KEY not set.")
+            return results
         self.info(f"[THREAT] Querying VirusTotal: {self.target}")
         try:
             resp = requests.get(self.VT_URL.format(self.target),
@@ -30,5 +31,6 @@ class ThreatIntelModule(BaseModule):
                 color = "red" if mal > 0 else "green"
                 print_result("Malicious detections", str(mal), color=color)
         except Exception as e:
-            self.error(str(e)); results["error"] = str(e)
+            self.error(str(e))
+            results["error"] = str(e)
         return results

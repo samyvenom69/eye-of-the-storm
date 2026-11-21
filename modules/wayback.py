@@ -24,5 +24,6 @@ class WaybackModule(BaseModule):
                     results["snapshots"].append(snap)
                     print_result(row[0], snap["url"], color="cyan")
         except Exception as e:
-            self.error(str(e)); results["error"] = str(e)
+            self.error(str(e))
+            results["error"] = str(e)
         return results

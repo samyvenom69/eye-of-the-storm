@@ -30,5 +30,6 @@ class WebScraperModule(BaseModule):
             except OSError:
                 self.warn("spaCy model not installed. Run: python -m spacy download en_core_web_sm")
         except Exception as e:
-            self.error(str(e)); results["error"] = str(e)
+            self.error(str(e))
+            results["error"] = str(e)
         return results
