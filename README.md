@@ -36,8 +36,8 @@ Discover shadow assets, correlate threat intelligence, and audit digital footpri
 
 ## ⚡ Why Eye of the Storm?
 Modern organizations suffer from Shadow IT and sprawling external attack surfaces. EOTS unifies 16 specialized reconnaissance modules into a single high-performance Python engine:
-- **Parallel Execution Engine:** Independent modules run concurrently (thread pool), cutting multi-module scan times dramatically.
-- **High-Concurrency Harvesting:** DNS brute-force and username recon run dozens of workers with connection pooling, automatic retries and exponential backoff.
+- **Async + Parallel Execution:** Independent modules run concurrently (thread pool), and network-heavy modules use an `asyncio`/`aiohttp` engine internally.
+- **High-Concurrency Harvesting:** DNS brute-force and username recon run dozens of concurrent lookups with automatic retries and exponential backoff.
 - **AI/NLP Entity Extraction:** Automatically parses scraped web content using `spaCy` to identify organizations, personnel, and leaked contact vectors.
 - **Graceful Degradation:** Operates out-of-the-box using passive sources, while seamlessly scaling when CTI API keys (Shodan, VirusTotal, AbuseIPDB, HIBP) are provided.
 - **Executive Deliverables:** Generates structured JSON for SIEM ingestion and polished dark-theme HTML reports for risk committees.
@@ -47,10 +47,11 @@ Modern organizations suffer from Shadow IT and sprawling external attack surface
 ## 🚀 Performance
 | Optimization | Impact |
 |---|---|
+| Async engine (`asyncio` + `aiohttp`) | Username recon scans 35 platforms in ~1.6 s; `crt.sh` and DNS brute-force run concurrently |
+| Async DNS brute-force (`dns.asyncresolver`) | Dozens of concurrent lookups with per-query timeouts instead of sequential resolution |
 | Parallel module engine (`--jobs N`) | Modules no longer run one after another — wall-clock time ≈ slowest module |
 | Lazy module imports (`importlib`) | Startup stays fast; heavy deps like `spaCy` load only when used |
-| Parallel DNS brute-force (40 workers) | Subdomain enumeration no longer resolves names sequentially |
-| Shared `requests.Session` + retries/backoff | Fewer dropped requests, resilience to rate limits (HTTP 429/5xx) |
+| Automatic retries & backoff (HTTP 429/5xx) | Resilience to rate limits on recon APIs |
 | Live progress bars & spinners (`rich`) | Real-time feedback on long-running scans |
 
 ---
@@ -64,9 +65,18 @@ Modern organizations suffer from Shadow IT and sprawling external attack surface
 ---
 
 ## 📦 Installation
+**Option A — Local install**
 1. Clone the repository: `git clone https://github.com/samyvenom69/eye-of-the-storm.git`
 2. Enter directory: `cd eye-of-the-storm`
 3. Run the automated installer: `./install.sh` (or set up manually using a Python virtual environment and `pip install -r requirements.txt`).
+
+**Option B — Docker (all-in-one: nmap, exiftool, spaCy model included)**
+```bash
+docker build -t eots .
+docker run --rm -it eots --target example.com --all --report
+# With API keys and reports persisted on the host:
+docker run --rm -it --env-file .env -v "$(pwd)/output:/app/output" eots --target example.com --report
+```
 
 ---
 
@@ -83,11 +93,11 @@ Modern organizations suffer from Shadow IT and sprawling external attack surface
 | Phase | Flag | Capability |
 |---|---|---|
 | 🟦 RECON | `whois` | WHOIS lookup & DNS records (A, MX, NS, TXT, CNAME) |
-| 🟦 RECON | `subdomain` | Subdomain enumeration (crt.sh + parallel wordlist brute-force) |
+| 🟦 RECON | `subdomain` | Subdomain enumeration (crt.sh + async wordlist brute-force) |
 | 🟦 RECON | `ip` | IP geolocation, ASN, abuse score, reverse DNS |
 | 🟦 RECON | `portscan` | TCP/UDP port scanning via Nmap integration |
 | 🟦 RECON | `metadata` | Extract metadata from PDF, DOCX, XLSX, images |
-| 🟪 INVESTIGATE | `username` | Username lookup across 30+ platforms (concurrent) |
+| 🟪 INVESTIGATE | `username` | Username lookup across 30+ platforms (async engine) |
 | 🟪 INVESTIGATE | `email` | Breach detection, paste leaks, email validation |
 | 🟪 INVESTIGATE | `phone` | Carrier, region, timezone, number validation |
 | 🟪 INVESTIGATE | `exif` | Extract GPS coordinates & EXIF from images |
@@ -111,9 +121,10 @@ Copy `.env.example` to `.env` and configure your optional API keys for Shodan, V
 - [x] Parallel module execution engine
 - [x] Retries & exponential backoff on HTTP calls
 - [x] Redesigned executive HTML report
-- [ ] Async (`aiohttp`) migration of network-heavy modules
+- [x] Async (`aiohttp` / `dns.asyncresolver`) engine for network-heavy modules
+- [x] Docker image (all-in-one: nmap, exiftool, spaCy model)
+- [ ] `pipx` installation / PyPI packaging
 - [ ] Result diffing between two scans (attack-surface drift)
-- [ ] Docker image & `pipx` installation
 - [ ] Optional SQLite history of past scans
 
 ---
